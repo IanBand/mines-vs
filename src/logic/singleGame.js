@@ -1,6 +1,10 @@
 import State from '@/logic/state';
 import BoardRender from '@/logic/boardRender';
-import MouseHandler from './mouseHandler';
+import MouseHandler from '@/logic/mouseHandler';
+
+//import BoardRenderWorker from 'worker-loader!./boardRender.worker.js';
+import BoardRenderWorker from '@/logic/boardRender.worker.js';
+
 
 import {p1,p2} from '@/logic/const.js'; // for debugging purposes - multiplayer features are tested in singleplayer first
 
@@ -26,6 +30,11 @@ export default class SingleGame{
             true, // real flag
             false // versus flag, true for testing purposes
         );
+        this.renderWorker = new BoardRenderWorker();
+        console.log(this.renderWorker);
+        this.renderWorker.postMessage({postMessage: true});
+        
+
         this.mouseHandler = new MouseHandler(
             boardRef, 
             this.state, 

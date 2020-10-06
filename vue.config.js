@@ -1,3 +1,16 @@
 module.exports = {
-    lintOnSave: true
+    lintOnSave: true,
+    configureWebpack:{
+      module: {
+        rules: [
+          {
+            test: /\.worker\.js$/,
+            loader: 'worker-loader',
+            options: {
+              esModule: false,
+            },
+          },
+        ],
+      },
+    }
   }

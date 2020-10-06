@@ -22,3 +22,14 @@
 // or do independent animations play at some board coordinates
 
 // need a map (state coordinates) => {board render coordinates}
+
+
+onmessage = function (event) {
+    const workerResult = event.data;
+
+    console.log('worker event!', event);
+  
+    workerResult.onmessage = true;
+  
+    postMessage(workerResult);
+};
