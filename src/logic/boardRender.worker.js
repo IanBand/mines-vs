@@ -25,11 +25,11 @@
 
 
 onmessage = function (event) {
-    const workerResult = event.data;
+    // event.data contains postMessage arg
 
-    console.log('worker event!', event);
+    console.log('worker received a message!', event);
   
-    workerResult.onmessage = true;
+    //workerResult.onmessage = true;
   
-    postMessage(workerResult);
+    //postMessage(workerResult);
 };
