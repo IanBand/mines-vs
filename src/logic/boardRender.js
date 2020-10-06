@@ -1,3 +1,5 @@
+/* LEGACY BOARD RENDER CLASS */
+
 // renders minesweeper state on canvas
 // handles baseline canvas click functionality
 import {p1, p2} from '@/logic/const.js';
@@ -32,12 +34,6 @@ const theme = {
     enimyHover: '#00000030',
     mine: '#000000'
 }
-
-const none = 0;
-const leftMouse = 1;
-const rightMouse = 2;
-const middleMouse = 4;
-
 
 // flag triangle constants
 const scale = 0.65; // ratio of triangle sidelength to tile sidelength 

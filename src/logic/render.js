@@ -25,10 +25,11 @@
 
 // https://webpack.js.org/loaders/worker-loader/
 // https://medium.com/samsung-internet-dev/offscreencanvas-workers-and-performance-3023ca15d7c7
-onmessage = function (event) {
-    // event.data contains postMessage arg
 
-    console.log('worker received a message!', event);
+onmessage = function (e) {
+    // e.data contains postMessage arg
+
+    console.log('worker received a message!', e);
   
     //workerResult.onmessage = true;
   

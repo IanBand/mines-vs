@@ -12,6 +12,9 @@ c.toString(16).padStart(2, 0) + (i === a.length - 1 || i % 16 === 15 ?
 ' '.repeat((15 - i % 16) * 3) + Array.from(a).splice(i - i % 16, 16).reduce((r, v) => 
 r + (v > 31 && v < 127 || v > 159 ? String.fromCharCode(v) : '.'), '  ') + '\n' : ''), ''));
 
+//https://stackoverflow.com/questions/38381317/javascript-multidimensional-typed-array-int8array-example
+// only copy typed array when the state actually updates
+
 
 export default class State{
     /**

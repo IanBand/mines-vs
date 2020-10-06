@@ -7,10 +7,9 @@ export default class BoardRender{
         this.px = px;
         //this.canvas.height = px * this.state.height;
         //this.canvas.width  = px * this.state.width;
-
-        // just rewrite boardRender itself to use a worker...
         this.renderWorker = new BoardRenderWorker();
-        this.renderWorker.postMessage({postMessage: true});
+        const workerCanvas = canvasRef.transferControlToOffscreen();
+        this.renderWorker.postMessage({type: 'init', canvas: workerCanvas}, [workerCanvas]);
                 
         
 
