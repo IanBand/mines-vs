@@ -23,7 +23,8 @@
 
 // need a map (state coordinates) => {board render coordinates}
 
-
+// https://webpack.js.org/loaders/worker-loader/
+// https://medium.com/samsung-internet-dev/offscreencanvas-workers-and-performance-3023ca15d7c7
 onmessage = function (event) {
     // event.data contains postMessage arg
 

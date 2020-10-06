@@ -1,5 +1,4 @@
-//import BoardRenderWorker from './boardRender.worker.js';
-import BoardRenderWorker from 'worker-loader!./boardRender.worker.js';
+import BoardRenderWorker from 'worker-loader!./render.js';
 export default class BoardRender{
     constructor(canvasRef, gameState, px, real, versus){
         this.real = real;
@@ -11,7 +10,6 @@ export default class BoardRender{
 
         // just rewrite boardRender itself to use a worker...
         this.renderWorker = new BoardRenderWorker();
-        console.log(this.renderWorker);
         this.renderWorker.postMessage({postMessage: true});
                 
         
