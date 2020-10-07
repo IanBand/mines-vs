@@ -16,6 +16,23 @@ r + (v > 31 && v < 127 || v > 159 ? String.fromCharCode(v) : '.'), '  ') + '\n' 
 // only copy typed array when the state actually updates
 
 
+// fit tile render data into 1 byte
+// tile bitmasks
+// tile data needed to render the tile must be efficently stored to be passed to renderer
+const value    = 0b00000111; // bits 0 - 2 (8 values)
+const revealed = 0b00001000; // bit 3 (0 = covered)
+const isMine   = 0b00010000; // bit 4 (0 = safe)
+const flagged  = 0b00100000; // bit 5 (0 = not flagged)
+const owner    = 0b11000000; // bits 6 - 7 (00 = no owner, 01 = p1, 10 = p2, 11 = unused)
+
+// fit tile multiplayer data into 32 bits
+const originX  = 0b00000000000000000000000001111111; // bits 0  - 6  max x dimensions are 2^7 = 128
+const originY  = 0b00000000000000000011111110000000; // bits 7  - 13 max y dimensions are 2^7 = 128
+const islandId = 0b00001111111111111100000000000000; // bits 14 - 27 max number of islands are 2^14 = 16384 (probably an overestimation)
+const ppp      = 0b00110000000000000000000000000000; // bits 28 - 29 (00 = no owner, 01 = p1, 10 = p2, 11 = unused)
+const checked  = 0b01000000000000000000000000000000; // bit 30
+// bit 31 unused
+
 export default class State{
     /**
      * @param {Number} height height of the board
@@ -30,10 +47,13 @@ export default class State{
         this.mines = mines;
         this.rng = seedrandom(`${seed}${mines}${height}${width}`);
         this.uncoveredSafeTiles = 0;
-        this.board = [];
         //this.mineList = [];
         
         // allocate board
+        this.board = new Uint8Array(this.height * this.width);
+        this.boardMetadata = new Uint32Array(this.height * this.width);
+
+        // init metadata objects
         for(let i = 0; i < this.width; ++i){
             this.board.push([]);
             for(let j = 0; j < this.height; ++j){
@@ -41,6 +61,7 @@ export default class State{
                 this.board[i][j] = new Tile();
             }
         }
+
         // init board
         if(real){
             this.placeMines();
@@ -48,7 +69,7 @@ export default class State{
         }
     }
     revealPoints(i,j,owner, originX, originY){
-        const target = this.board[i][j];
+        const target = this.board[i + j * this.width];
         let points = 0;
 
         //check if tile is revealed or flagged
@@ -92,7 +113,7 @@ export default class State{
             y = Math.floor(this.rng() * this.height );
             
 
-            target = this.board[x][y];
+            target = this.board[i + j * this.width];
 
             //if no mine already at x,y
             if(!target.isMine){
@@ -128,22 +149,22 @@ export default class State{
 
                 
 
-                this.board[i][j].value = 0;
+                this.board[i + j * this.width].value = 0;
                 this.neighbors(i,j).forEach( ({x,y}) => {
-                    if(this.board[x][y].isMine) this.board[i][j].value++
+                    if(this.board[x + y * this.width].isMine) this.board[i + j * this.width].value++
                 });
 
-                //if(i == 15 && j == 7) console.log(this.board[i][j].value)
+                //if(i == 15 && j == 7) console.log(this.board[i + j * this.width].value)
                 //TODO: turn these into tests
 
                 //if(this.neighbors(i,j).length < 3) console.log(i,j)
 
                 /*                
-                console.hex(this.board[i][j].byteRepresentation());
-                console.log(this.board[i][j]);
-                this.board[i][j].loadFromByte(this.board[i][j].byteRepresentation());
-                console.hex(this.board[i][j].byteRepresentation());
-                console.hex(this.board[i][j]);
+                console.hex(this.board[i + j * this.width].byteRepresentation());
+                console.log(this.board[i + j * this.width]);
+                this.board[i + j * this.width].loadFromByte(this.board[i + j * this.width].byteRepresentation());
+                console.hex(this.board[i + j * this.width].byteRepresentation());
+                console.hex(this.board[i + j * this.width]);
                 console.log('=======================');
                 */
             }
@@ -155,11 +176,11 @@ export default class State{
             for(let j = 0; j < this.height; ++j){
                 // assign random ppp. there are better ways to do this, this will do for now
                 // all members with the same islandId must have the same ppp
-                if(this.board[i][j].value == 0){
-                    this.board[i][j].ppp = (rand + this.board[i][j].islandId) % 2 == 0 ? p1 : p2;
+                if(this.board[i + j * this.width].value == 0){
+                    this.board[i + j * this.width].ppp = (rand + this.board[i + j * this.width].islandId) % 2 == 0 ? p1 : p2;
                 }
                 else{
-                    this.board[i][j].ppp = this.rng() > 0.5 ? p1 : p2;
+                    this.board[i + j * this.width].ppp = this.rng() > 0.5 ? p1 : p2;
                 }
                 
             }
@@ -175,7 +196,7 @@ export default class State{
      */
     reclaimTiles(newOwner, x, y){
 
-        const originTile = this.board[x][y];
+        const originTile = this.board[x + y * this.width];
 
         // case 1: tile at x,y is nonzero valued tile or mine
         if(originTile.value != 0 || originTile.isMine){
@@ -200,7 +221,7 @@ export default class State{
             // 3. reclaim all tiles (and their points) with the same origin click
             for(let i = 0; i < this.width; ++i){  
                 for(let j = 0; j < this.height; ++j){
-                    const target = this.board[i][j];
+                    const target = this.board[i + j * this.width];
                     if(
                         target.origin.x == originTile.origin.x && 
                         target.origin.y == originTile.origin.y
@@ -221,17 +242,17 @@ export default class State{
      * @param {Number} j y coordinate of tile that will be zero
      */
     forceZeroAt(i,j){
-        let mines = this.board[i][j].value;
+        let mines = this.board[i + j * this.width].value;
         //if( mines == 0) return;
 
 
         console.log('forcing zero at ',i,j);
         // clear mines from (i,j) and it's neighbors
-        this.board[i][j].isMine = false;
-        this.board[i][j].value = 0;
+        this.board[i + j * this.width].isMine = false;
+        this.board[i + j * this.width].value = 0;
         this.neighbors(i,j).forEach( ({x,y}) => {
-            this.board[x][y].isMine = false;
-            //this.board[x][y].value = 0;
+            this.board[x + y * this.width].isMine = false;
+            //this.board[x + y * this.width].value = 0;
         });
 
         // replace mines
@@ -324,7 +345,7 @@ export default class State{
         let id = 0;
         for(let i = 0; i < this.width; ++i){
             for(let j = 0; j < this.height; ++j){
-                const target = this.board[i][j];
+                const target = this.board[i + j * this.width];
                 if(target.value == 0 && target.checked == false){
                     this.markIslandRecursive(i, j, id);
                 } 
@@ -344,13 +365,13 @@ export default class State{
      * @param {Number} id id that will be assigned to the island
      */
     markIslandRecursive(i, j, id){
-        const target = this.board[i][j];
+        const target = this.board[i + j * this.width];
         if (target.checked) return;
         target.checked = true;
         target.islandId = id;
 
         this.neighbors(i,j).forEach( ({x,y}) => {
-            if(this.board[x][y].value == 0 && this.board[x][y].checked == false){
+            if(this.board[x + y * this.width].value == 0 && this.board[x + y * this.width].checked == false){
                 this.markIslandRecursive(x, y, id);
             }
         });
@@ -358,7 +379,7 @@ export default class State{
     uncheckAll(){
         for(let i = 0; i < width; ++i){
             for(let j = 0; j < height; ++j){
-                this.board[i][j]. checked = false;
+                this.board[i + j * this.width].checked = false;
             }
         }
     }

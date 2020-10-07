@@ -26,8 +26,17 @@
 // https://webpack.js.org/loaders/worker-loader/
 // https://medium.com/samsung-internet-dev/offscreencanvas-workers-and-performance-3023ca15d7c7
 
+var canvas = null;
+var ctx = null;
+
 onmessage = function (e) {
-    // e.data contains postMessage arg
+    switch(e.type){
+        default: 
+            break;
+        case 'init':
+            canvas = e.canvas;
+            ctx = canvas.getContext("2D");
+    }
 
     console.log('worker received a message!', e);
   
